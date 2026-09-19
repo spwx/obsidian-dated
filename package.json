@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
-    "version": "node version-bump.mjs && git add manifest.json versions.json"
+    "release": "node scripts/release.mjs"
   },
   "devDependencies": {
     "builtin-modules": "5.4.0",

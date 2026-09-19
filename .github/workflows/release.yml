@@ -23,6 +23,9 @@ jobs:
           node-version: lts/*
           cache: npm
 
+      - run: npm ci
+      - run: npm run build
+
       - name: Check tag matches manifest and versions.json
         run: |
           version=$(node -p "require('./manifest.json').version")
@@ -30,18 +33,14 @@ jobs:
             echo "Tag $GITHUB_REF_NAME does not match manifest.json version $version"
             exit 1
           fi
-          node -e '
-            const v = require("./versions.json");
-            const tag = process.env.GITHUB_REF_NAME;
-            if (!v[tag]) {
-              console.error(`versions.json has no entry for ${tag}`);
-              process.exit(1);
-            }
-          '
-
-      - run: npm ci
-
-      - run: npm run build
+          # versions.json tells older Obsidian installs which build still runs
+          # for them, so every released version needs an entry.
+          min=$(node -p "require('./manifest.json').minAppVersion")
+          listed=$(node -p "require('./versions.json')[process.env.GITHUB_REF_NAME] ?? ''")
+          if [ "$listed" != "$min" ]; then
+            echo "versions.json has \"$GITHUB_REF_NAME\": \"$listed\", expected minAppVersion \"$min\""
+            exit 1
+          fi
 
       - uses: actions/attest@v4
         with:

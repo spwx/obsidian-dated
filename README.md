@@ -39,28 +39,29 @@ npm run build # production build
 
 ## Releasing
 
-To ship an update:
+Run the release script with the new version (no `v`), from a clean `main`:
 
 ```sh
-npm version 1.3.0   # updates package.json, manifest.json and versions.json,
-                    # then commits and tags 1.3.0 (no "v", per .npmrc)
-git push --follow-tags
+npm run release -- 1.3.0          # bump, build, commit, tag
+npm run release -- 1.3.0 --push   # ...and push main and the tag
 ```
 
-The Release workflow checks the tag against `manifest.json` and `versions.json`, builds from source, attests `main.js` and `manifest.json`, and publishes the GitHub release.
+It bumps `version` in `manifest.json` (and matches `package.json` to it), adds the same version to `versions.json` mapped to the manifest's `minAppVersion`, runs the production build, then commits and tags. The commit message opens in `$EDITOR` prefilled with `Bump to <version>` so the body can describe what changed; `--no-edit` keeps just that line. It refuses to run on a dirty tree, off `main`, when `main` and `origin/main` have diverged, or when the version is not newer than the current one.
+
+Nothing else needs editing by hand — don't set `version` in `manifest.json`, `package.json` or `versions.json` yourself, or the script's checks lose their meaning.
+
+Pushing the tag starts the Release workflow, which builds from source, checks the tag against `manifest.json` and `versions.json`, attests `main.js` and `manifest.json`, and publishes the GitHub release.
 
 That's the whole update process. Obsidian picks up new GitHub releases by itself, so there is nothing to submit or edit anywhere else — the community directory is a one-time submission (see below).
 
 ### Raising the minimum Obsidian version
 
-`version-bump.mjs` copies `minAppVersion` out of `manifest.json` as it is, so edit that field **before** running `npm version`:
+The release script copies `minAppVersion` out of `manifest.json` as it is, so edit that field **before** running it:
 
 ```sh
-# edit minAppVersion in manifest.json, then:
-npm version 1.3.0
+# edit minAppVersion in manifest.json, commit, then:
+npm run release -- 1.3.0
 ```
-
-Don't edit `version` in `manifest.json` by hand — `npm version` writes it for you, and doing both leaves the two out of step.
 
 `versions.json` is what keeps older Obsidian installs working: it maps each released plugin version to the `minAppVersion` that release shipped with, so a user on an older Obsidian is offered the newest release that still supports them, instead of nothing. Old entries are history — never rewrite or prune them.
 
