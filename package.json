@@ -1,0 +1,9 @@
+{
+  "name": "obsidian-dated",
+  "private": true,
+  "description": "Dev-only. The Dated Obsidian plugin is main.js, hand-written, so the build only syntax-checks it.",
+  "license": "MIT",
+  "scripts": {
+    "build": "node --check main.js"
+  }
+}
