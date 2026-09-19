@@ -1,7 +1,7 @@
 {
   "id": "dated",
   "name": "Dated",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "minAppVersion": "1.4.0",
   "description": "Writes created and modified date-times into the frontmatter of notes.",
   "author": "spwx",
