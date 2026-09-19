@@ -1,7 +1,7 @@
 name: Release
 
-# Push a tag equal to manifest.json's version (e.g. 1.2.0, no "v") to check,
-# attest and publish main.js + manifest.json as a GitHub release.
+# Push a tag equal to manifest.json's version (e.g. 1.2.0, no "v") to build,
+# check, attest and publish main.js + manifest.json as a GitHub release.
 on:
   push:
     tags:
@@ -21,16 +21,27 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: lts/*
+          cache: npm
 
-      - run: npm run build
-
-      - name: Check tag matches manifest version
+      - name: Check tag matches manifest and versions.json
         run: |
           version=$(node -p "require('./manifest.json').version")
           if [ "$version" != "$GITHUB_REF_NAME" ]; then
             echo "Tag $GITHUB_REF_NAME does not match manifest.json version $version"
             exit 1
           fi
+          node -e '
+            const v = require("./versions.json");
+            const tag = process.env.GITHUB_REF_NAME;
+            if (!v[tag]) {
+              console.error(`versions.json has no entry for ${tag}`);
+              process.exit(1);
+            }
+          '
+
+      - run: npm ci
+
+      - run: npm run build
 
       - uses: actions/attest@v4
         with:

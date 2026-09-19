@@ -17,9 +17,14 @@ module.exports = class Dated extends Plugin {
     this.register(() => this.timers.forEach(clearTimeout));
 
     this.addCommand({
-      id: "stamp-missing",
-      name: "Stamp notes missing timestamps",
-      callback: () => this.stampMissing(),
+      id: "add-timestamps",
+      name: "Add timestamps",
+      checkCallback: (checking) => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file || !this.tracked(file)) return false;
+        if (!checking) this.addTimestamps(file);
+        return true;
+      },
     });
 
     // Vault fires "create" for every existing file while indexing at startup;
@@ -29,7 +34,7 @@ module.exports = class Dated extends Plugin {
         this.app.vault.on("create", (file) => {
           if (!this.tracked(file)) return;
           this.arrivals.set(file.path, Date.now());
-          this.stamp(file, fillMissing(moment().format(FORMAT)));
+          this.stamp(file, fillMissing(file, moment().format(FORMAT)));
         })
       );
       this.registerEvent(
@@ -48,7 +53,7 @@ module.exports = class Dated extends Plugin {
               const fm = this.frontmatter(file);
               if (fm?.[MODIFIED] === now && fm[CREATED] != null) return;
               this.stamp(file, (fm) => {
-                fillMissing(now)(fm);
+                fillMissing(file, now)(fm);
                 if (fm[MODIFIED] !== now) fm[MODIFIED] = now;
               });
             }, DELAY_MS)
@@ -58,15 +63,14 @@ module.exports = class Dated extends Plugin {
     });
   }
 
-  async stampMissing() {
-    const now = moment().format(FORMAT);
-    const files = this.app.vault.getMarkdownFiles().filter((file) => {
-      if (!this.tracked(file)) return false;
-      const fm = this.frontmatter(file);
-      return fm?.[CREATED] == null || fm[MODIFIED] == null;
-    });
-    for (const file of files) await this.stamp(file, fillMissing(now));
-    new Notice(`Dated: stamped ${files.length} note(s).`);
+  async addTimestamps(file) {
+    const fm = this.frontmatter(file);
+    if (fm?.[CREATED] != null && fm[MODIFIED] != null) {
+      new Notice("Dated: this note already has timestamps.");
+      return;
+    }
+    await this.stamp(file, fillMissing(file, moment().format(FORMAT)));
+    new Notice("Dated: timestamps added.");
   }
 
   tracked(file) {
@@ -90,9 +94,16 @@ module.exports = class Dated extends Plugin {
   }
 };
 
-function fillMissing(now) {
+// A missing stamp is backfilled from the file system, which is closer to the
+// truth than "now" for notes that predate the plugin. Falls back to now when
+// the vault adapter has no stat (or it's zero).
+function fillMissing(file, now) {
   return (fm) => {
-    if (fm[CREATED] == null) fm[CREATED] = now;
-    if (fm[MODIFIED] == null) fm[MODIFIED] = now;
+    if (fm[CREATED] == null) fm[CREATED] = fsTime(file.stat?.ctime, now);
+    if (fm[MODIFIED] == null) fm[MODIFIED] = fsTime(file.stat?.mtime, now);
   };
+}
+
+function fsTime(ms, now) {
+  return ms ? moment(ms).format(FORMAT) : now;
 }

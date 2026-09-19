@@ -1,9 +1,18 @@
 {
   "name": "obsidian-dated",
+  "version": "1.2.0",
   "private": true,
-  "description": "Dev-only. The Dated Obsidian plugin is main.js, hand-written, so the build only syntax-checks it.",
+  "description": "Writes created and modified date-times into the frontmatter of notes.",
+  "main": "main.js",
   "license": "MIT",
   "scripts": {
-    "build": "node --check main.js"
+    "dev": "node esbuild.config.mjs",
+    "build": "node esbuild.config.mjs production",
+    "version": "node version-bump.mjs && git add manifest.json versions.json"
+  },
+  "devDependencies": {
+    "builtin-modules": "5.4.0",
+    "esbuild": "0.28.2",
+    "obsidian": "1.13.1"
   }
 }

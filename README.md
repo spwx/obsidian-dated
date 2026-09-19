@@ -12,16 +12,16 @@ modified: 2026-09-19 17:02
 ## Behaviour
 
 - **New notes** get both `created` and `modified`, set to the current time.
-- **Edited notes** get `modified` updated once you stop typing for 5 seconds, so the file isn't rewritten under the cursor on every keystroke. A missing `created` is filled in at the same time. An existing `created` is never changed.
+- **Edited notes** get `modified` updated once you stop typing for 5 seconds, so the file isn't rewritten under the cursor on every keystroke. A missing `created` is filled in at the same time, from the file system's created time. An existing `created` is never changed.
 - **Arriving files**: writes in the first 2 seconds after a file appears (such as a copy finishing) don't count as edits.
 - **Templates**: notes inside the core Templates plugin's folder are left alone, so their stamps don't leak into notes made from them.
 - Only Markdown notes are touched. The format is `YYYY-MM-DD HH:mm` in local time.
 
-Notes that already exist when you install the plugin aren't stamped until you edit them, or until you run the command below.
+Notes that already exist when you install the plugin aren't stamped until you edit them, or until you run the command below on them.
 
 ## Commands
 
-- **Stamp notes missing timestamps**: adds `created` and `modified` (set to now) to every note that lacks either. Existing values are kept.
+- **Dated: Add timestamps**: adds `created` and `modified` to the current note if it lacks either, taken from the file system's created and modified times. Existing values are kept.
 
 ## Installation
 
@@ -29,13 +29,23 @@ Manually: download `main.js` and `manifest.json` from the [latest release](https
 
 ## Development
 
-`main.js` is the source; `npm run build` only syntax-checks it, so the released file is byte-for-byte the one in the repo.
-
-To release, bump `version` in `manifest.json`, commit, then push a tag with the same version (no `v`). The Release workflow attests `main.js` and `manifest.json` and publishes the GitHub release.
+The source is `src/main.js`. [esbuild](https://esbuild.github.io) bundles it into the `main.js` that ships, which is why `main.js` is not in the repo.
 
 ```sh
-git tag 1.2.0 && git push origin 1.2.0
+npm ci        # install
+npm run dev   # rebuild on change
+npm run build # production build
 ```
+
+To release, bump the version and push the tag:
+
+```sh
+npm version 1.3.0   # updates package.json, manifest.json and versions.json,
+                    # then commits and tags 1.3.0 (no "v", per .npmrc)
+git push --follow-tags
+```
+
+The Release workflow checks the tag against `manifest.json` and `versions.json`, builds from source, attests `main.js` and `manifest.json`, and publishes the GitHub release.
 
 ## License
 
