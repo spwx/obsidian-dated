@@ -37,7 +37,9 @@ npm run dev   # rebuild on change
 npm run build # production build
 ```
 
-To release, bump the version and push the tag:
+## Releasing
+
+To ship an update:
 
 ```sh
 npm version 1.3.0   # updates package.json, manifest.json and versions.json,
@@ -46,6 +48,31 @@ git push --follow-tags
 ```
 
 The Release workflow checks the tag against `manifest.json` and `versions.json`, builds from source, attests `main.js` and `manifest.json`, and publishes the GitHub release.
+
+That's the whole update process. Obsidian picks up new GitHub releases by itself, so there is nothing to submit or edit anywhere else — the community directory is a one-time submission (see below).
+
+### Raising the minimum Obsidian version
+
+`version-bump.mjs` copies `minAppVersion` out of `manifest.json` as it is, so edit that field **before** running `npm version`:
+
+```sh
+# edit minAppVersion in manifest.json, then:
+npm version 1.3.0
+```
+
+Don't edit `version` in `manifest.json` by hand — `npm version` writes it for you, and doing both leaves the two out of step.
+
+`versions.json` is what keeps older Obsidian installs working: it maps each released plugin version to the `minAppVersion` that release shipped with, so a user on an older Obsidian is offered the newest release that still supports them, instead of nothing. Old entries are history — never rewrite or prune them.
+
+### Listing in the community directory (one-time)
+
+Only needed once, for the first public release; updates after that are automatic.
+
+1. Push a release, so `main.js` and `manifest.json` are attached to a GitHub release.
+2. Submit the plugin at [community.obsidian.md](https://community.obsidian.md), signing in and linking this GitHub repo.
+3. Fix anything the automated review flags, then wait for a maintainer.
+
+The directory reads `manifest.json` from the **HEAD of the default branch**, not from the release. So if `id`, `name`, `description` or `author` ever change, push that to `main` — a release alone won't update the listing.
 
 ## License
 
