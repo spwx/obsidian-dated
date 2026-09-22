@@ -1,4 +1,11 @@
-const { Notice, Plugin, TFile, moment } = require("obsidian");
+const {
+  Notice,
+  Plugin,
+  PluginSettingTab,
+  Setting,
+  TFile,
+  moment,
+} = require("obsidian");
 
 const CREATED = "created";
 const MODIFIED = "modified";
@@ -9,8 +16,16 @@ const DELAY_MS = 5000;
 // Writes right after a file appears (ours, or a copy finishing) aren't edits.
 const ARRIVAL_MS = 2000;
 
+const DEFAULT_SETTINGS = {
+  // Notes written for tools rather than people; stamps would just be noise.
+  ignore: ["CLAUDE.md", "AGENTS.md", "README.md"],
+};
+
 module.exports = class Dated extends Plugin {
-  onload() {
+  async onload() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.addSettingTab(new DatedSettingTab(this.app, this));
+
     this.timers = new Map();
     this.arrivals = new Map();
     this.writing = new Set();
@@ -75,6 +90,9 @@ module.exports = class Dated extends Plugin {
 
   tracked(file) {
     if (!(file instanceof TFile) || file.extension !== "md") return false;
+    if (this.settings.ignore.some((pattern) => ignores(pattern, file))) {
+      return false;
+    }
     // Leave templates alone so their stamps don't leak into new notes.
     const folder = this.app.internalPlugins?.getPluginById?.("templates")
       ?.instance?.options?.folder;
@@ -85,6 +103,10 @@ module.exports = class Dated extends Plugin {
     return this.app.metadataCache.getFileCache(file)?.frontmatter;
   }
 
+  saveSettings() {
+    return this.saveData(this.settings);
+  }
+
   stamp(file, fn) {
     this.writing.add(file.path);
     return this.app.fileManager
@@ -93,6 +115,42 @@ module.exports = class Dated extends Plugin {
       .finally(() => this.writing.delete(file.path));
   }
 };
+
+class DatedSettingTab extends PluginSettingTab {
+  constructor(app, plugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+
+  display() {
+    this.containerEl.empty();
+    new Setting(this.containerEl)
+      .setName("Ignored files")
+      .setDesc(
+        "One per line. A bare name (README.md) matches that file in any " +
+          "folder; a path (Archive/Old.md) matches that file only; a path " +
+          "ending in / (Archive/) matches everything inside that folder."
+      )
+      .addTextArea((text) => {
+        text.inputEl.rows = 6;
+        text.setValue(this.plugin.settings.ignore.join("\n")).onChange(
+          async (value) => {
+            this.plugin.settings.ignore = value
+              .split("\n")
+              .map((line) => line.trim())
+              .filter(Boolean);
+            await this.plugin.saveSettings();
+          }
+        );
+      });
+  }
+}
+
+function ignores(pattern, file) {
+  if (pattern.endsWith("/")) return file.path.startsWith(pattern);
+  if (pattern.includes("/")) return file.path === pattern;
+  return file.name === pattern;
+}
 
 // A missing stamp is backfilled from the file system, which is closer to the
 // truth than "now" for notes that predate the plugin. Falls back to now when

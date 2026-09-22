@@ -15,6 +15,7 @@ modified: 2026-09-19 17:02
 - **Edited notes** get `modified` updated once you stop typing for 5 seconds, so the file isn't rewritten under the cursor on every keystroke. A missing `created` is filled in at the same time, from the file system's created time. An existing `created` is never changed.
 - **Arriving files**: writes in the first 2 seconds after a file appears (such as a copy finishing) don't count as edits.
 - **Templates**: notes inside the core Templates plugin's folder are left alone, so their stamps don't leak into notes made from them.
+- **Ignored files**: `CLAUDE.md`, `AGENTS.md` and `README.md` are left alone by default. See [Settings](#settings).
 - Only Markdown notes are touched. The format is `YYYY-MM-DD HH:mm` in local time.
 
 Notes that already exist when you install the plugin aren't stamped until you edit them, or until you run the command below on them.
@@ -22,6 +23,10 @@ Notes that already exist when you install the plugin aren't stamped until you ed
 ## Commands
 
 - **Dated: Add timestamps**: adds `created` and `modified` to the current note if it lacks either, taken from the file system's created and modified times. Existing values are kept.
+
+## Settings
+
+- **Ignored files**: files Dated never stamps, one per line. A bare name such as `README.md` matches that file in any folder. A path such as `Archive/Old.md` matches only that file. A path ending in `/`, such as `Archive/`, matches everything inside that folder. The default list is `CLAUDE.md`, `AGENTS.md` and `README.md`.
 
 ## Installation
 
